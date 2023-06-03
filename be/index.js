@@ -6,7 +6,11 @@ const { db } = require ('./config');
 
 // Define your routes and middleware here
 
-app.use(express.json()); // Add this line to parse JSON data
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
+ // Add this line to parse JSON data
 
 app.get('/KeyGen', (req, res) => {
     const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
