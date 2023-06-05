@@ -9,7 +9,7 @@ export default function MainPage() {
 
   async function getKey() {
     await axios
-      .get("http://localhost:3000/KeyGen")
+      .get("http://localhost:5000/KeyGen")
       .then((res) => {
         const privateKey = res.data.privateKey;
         const publicKey = res.data.publicKey;
