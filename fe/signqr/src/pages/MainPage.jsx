@@ -4,9 +4,10 @@ import axios from "axios";
 export default function MainPage() {
   const [privateKey, setPrivateKey] = useState("");
   const [publicKey, setPublicKey] = useState("");
-  const [data, setData] = useState("");
+  // const [data, setData] = useState("");
+  const [inputFile, setInputFile] = useState(null);
   const [inputPrivateKey, setInputPrivateKey] = useState("");
-  const [signature, setSignature] = useState("");
+  // const [signature, setSignature] = useState("");
 
   async function getKey() {
     await axios
@@ -22,21 +23,36 @@ export default function MainPage() {
       });
   }
 
-  async function postSign(event) {
-    event.preventDefault();
+  // async function postSign(event) {
+  //   event.preventDefault();
+  //   await axios
+  //     .post("http://localhost:5000/sign", {
+  //       data: data,
+  //       privateKey: inputPrivateKey,
+  //     })
+  //     .then((res) => {
+  //       const getSignature = res.data.signature;
+  //       console.log(getSignature);
+  //       setSignature(getSignature);
+  //     })
+  //     .catch((err) => {
+  //       console.log(err);
+  //     });
+  // }
+
+  function handleFileChange(e) {
+    setInputFile(e.target.files[0]);
+  }
+
+  async function handleFileUpload() {
+    const formData = new FormData();
+    formData.append("file", inputFile);
     await axios
-      .post("http://localhost:5000/sign", {
-        data: data,
-        privateKey: inputPrivateKey,
-      })
+      .post("http://localhost:5000/upload", formData)
       .then((res) => {
-        const getSignature = res.data.signature;
-        console.log(getSignature);
-        setSignature(getSignature);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+        console.log(res.data.message)
+      // .catch((err) => console.log(err));
+    });
   }
 
   function handleCopy(text) {
@@ -109,15 +125,33 @@ export default function MainPage() {
 
       {/* Generate Signature */}
       <form
-        onSubmit={postSign}
+        // onSubmit={postSig'n}
         className="mx-auto mb-24 flex w-fit flex-col gap-4 rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20 lg:gap-6 lg:px-28"
       >
         <span className="mx-auto text-xl font-bold text-white lg:text-3xl">
           Generate Signature
         </span>
-        {/* <input class="w-fit text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400" type="file" /> */}
-        <div className="flex flex-col gap-y-5 lg:flex-row lg:gap-x-8">
-          <div className="flex flex-col gap-2 rounded-lg bg-white px-7 py-4 lg:px-12 lg:pb-8">
+        <div className="lg:px-28">
+          <div className="flex w-full flex-col gap-y-3 rounded-lg bg-white px-16 py-3">
+            <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
+              Data
+            </span>
+            <input
+              className="block w-full cursor-pointer rounded-md border-2 bg-ipurple text-sm text-gray-300 focus:outline-none"
+              type="file"
+              onChange={handleFileChange}
+            />
+            <button
+              onClick={() => handleFileUpload()}
+              type="button"
+              className="text-yellow mx-auto w-fit rounded-lg bg-igreen px-3 py-1 text-sm font-bold text-white"
+            >
+              Upload
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-col gap-y-5  lg:gap-x-8">
+          {/* <div className="flex flex-col gap-2 rounded-lg bg-white px-7 py-4 lg:px-12 lg:pb-8">
             <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
               Data
             </span>
@@ -128,13 +162,13 @@ export default function MainPage() {
               onChange={(event) => setData(event.target.value)}
               placeholder="Input your data (string)"
             />
-          </div>
+          </div> */}
           <div className="flex flex-col gap-2 rounded-lg bg-white px-7 py-4 lg:px-12 lg:pb-8">
             <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
               Private Key
             </span>
             <textarea
-              rows="6"
+              rows="4"
               className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-6 py-3 text-sm"
               value={inputPrivateKey}
               onChange={(event) => setInputPrivateKey(event.target.value)}
@@ -143,19 +177,19 @@ export default function MainPage() {
           </div>
         </div>
         <div className="w-full px-10 lg:px-32">
-          <div className="flex flex-col gap-2 rounded-lg bg-white px-7 py-4 lg:px-12">
+          <div className="flex flex-col gap-3 rounded-lg bg-white px-7 py-4 lg:px-12">
             <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
               Signature
             </span>
             <textarea
-              rows="2"
+              rows="1"
               className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-6 py-3 text-sm"
-              value={signature}
+              // value={signature}
               readOnly
               placeholder="Signature will be generated here"
             />
             <button
-              onClick={() => handleCopy(signature)}
+              // onClick={() => handleCopy(signature)}
               className="text-yellow mx-auto w-fit rounded-lg bg-igreen px-3 py-1 text-sm font-bold text-white"
             >
               Copy

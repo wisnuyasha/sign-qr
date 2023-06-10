@@ -35,6 +35,7 @@ app.get('/KeyGen', (req, res) => {
       .then((docRef) => {
         res.send({ id: docRef.id, publicKey: publicKey.toString('base64'), privateKey: privateKey.toString('base64') });
       })
+
       .catch((error) => {
         res.status(500).send({ error: 'Failed to store key pair' });
       });
