@@ -2,8 +2,10 @@ const express = require('express');
 const app = express();
 const port = 5000; // Specify the desired port
 let crypto = require('crypto');
-const { db } = require ('./config');
+const multer = require("multer");
+const { db, storage } = require ('./config');
 
+const upload = multer({ storage: multer.memoryStorage() });
 // Define your routes and middleware here
 
 app.use((req, res, next) => {
@@ -35,6 +37,20 @@ app.get('/KeyGen', (req, res) => {
       })
       .catch((error) => {
         res.status(500).send({ error: 'Failed to store key pair' });
+      });
+  });
+  
+  app.post("/upload", upload.single("file"), (req, res) => {
+    const storageRef = storage.ref(`files/${req.file.originalname}`);
+  
+    storageRef.put(req.file.buffer)
+      .then((snapshot) => {
+        console.log("File uploaded successfully");
+        res.json({ message: "File uploaded successfully" });
+      })
+      .catch((error) => {
+        console.error("Failed to upload file:", error);
+        res.status(500).json({ error: "Failed to upload file" });
       });
   });
   

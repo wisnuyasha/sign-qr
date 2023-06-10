@@ -15,4 +15,4 @@ const firebaseConfig = {
   const db = firebaseApp.firestore();
   const storage = firebaseApp.storage();
 
-  module.exports = { firebaseApp, db };
+  module.exports = { firebaseApp, db, storage };
