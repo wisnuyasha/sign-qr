@@ -4,10 +4,13 @@ import axios from "axios";
 export default function MainPage() {
   const [privateKey, setPrivateKey] = useState("");
   const [publicKey, setPublicKey] = useState("");
-  // const [data, setData] = useState("");
   const [inputFile, setInputFile] = useState(null);
+  const [isUpload, setIsUpload] = useState(false);
+  const [isUploadErr, setIsUploadErr] = useState(false);
   const [inputPrivateKey, setInputPrivateKey] = useState("");
-  // const [signature, setSignature] = useState("");
+  const [signature, setSignature] = useState("");
+  const [isGeneratedSign, setIsGeneratedSign] = useState(false);
+  const [isGeneratedKey, setIsGeneratedKey] = useState(false);
 
   async function getKey() {
     await axios
@@ -17,28 +20,33 @@ export default function MainPage() {
         const publicKey = res.data.publicKey;
         setPrivateKey(privateKey);
         setPublicKey(publicKey);
+        setIsGeneratedKey(true);
       })
       .catch((err) => {
         console.log(err);
       });
   }
 
-  // async function postSign(event) {
-  //   event.preventDefault();
-  //   await axios
-  //     .post("http://localhost:5000/sign", {
-  //       data: data,
-  //       privateKey: inputPrivateKey,
-  //     })
-  //     .then((res) => {
-  //       const getSignature = res.data.signature;
-  //       console.log(getSignature);
-  //       setSignature(getSignature);
-  //     })
-  //     .catch((err) => {
-  //       console.log(err);
-  //     });
-  // }
+  async function genSign() {
+    if (isUpload) {
+      await axios
+        .post("http://localhost:5000/sign", {
+          privateKey: inputPrivateKey,
+        })
+        .then((res) => {
+          const getSignature = res.data.signature;
+          console.log(getSignature);
+          setSignature(getSignature);
+          setIsGeneratedSign(true);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      console.log("please upload your file");
+      setIsUploadErr(true);
+    }
+  }
 
   function handleFileChange(e) {
     setInputFile(e.target.files[0]);
@@ -47,10 +55,10 @@ export default function MainPage() {
   async function handleFileUpload() {
     const formData = new FormData();
     formData.append("file", inputFile);
-    await axios
-      .post("http://localhost:5000/upload", formData)
-      .then((res) => {
-        console.log(res.data.message)
+    await axios.post("http://localhost:5000/upload", formData).then((res) => {
+      console.log(res.data.message);
+      setIsUploadErr(false);
+      setIsUpload(true);
       // .catch((err) => console.log(err));
     });
   }
@@ -73,11 +81,11 @@ export default function MainPage() {
       </div>
 
       {/* Generate Key */}
-      <div className="mx-auto mb-24 flex w-fit flex-col gap-4 rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20 lg:gap-6 lg:px-28">
-        <span className="mx-auto text-xl font-bold text-white lg:text-3xl">
+      <div className="mx-auto mb-24 flex w-fit flex-col rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20  lg:px-28">
+        <span className="mx-auto mb-6 text-xl font-bold text-white lg:text-3xl">
           Generate Key
         </span>
-        <div className="flex flex-col gap-y-5 lg:flex-row lg:gap-x-8">
+        <div className="mb-6 flex flex-col gap-y-5 lg:flex-row lg:gap-x-8">
           <div className="flex flex-col gap-2 rounded-lg bg-white px-7 py-4 lg:px-12">
             <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
               Public Key
@@ -117,40 +125,53 @@ export default function MainPage() {
         </div>
         <button
           onClick={() => getKey()}
-          className="mx-auto w-fit rounded-lg bg-iyellow px-3 py-2 font-bold text-ipurple"
+          className="mx-auto mb-3 w-fit rounded-lg bg-iyellow px-3 py-2 font-bold text-ipurple"
         >
           Generate
         </button>
+        {isGeneratedKey ? (
+          <div className=" mx-auto w-fit rounded-xl border-2 border-iyellow px-3 py-[0.2rem]">
+            <p className=" font-semibold text-white">
+              Public key & Private key generated !!
+            </p>
+          </div>
+        ) : (
+          ""
+        )}
       </div>
 
       {/* Generate Signature */}
-      <form
-        // onSubmit={postSig'n}
-        className="mx-auto mb-24 flex w-fit flex-col gap-4 rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20 lg:gap-6 lg:px-28"
-      >
-        <span className="mx-auto text-xl font-bold text-white lg:text-3xl">
+      <div className="mx-auto mb-24 flex w-fit flex-col rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20 lg:px-28">
+        <span className="mx-auto mb-6 text-xl font-bold text-white lg:text-3xl">
           Generate Signature
         </span>
-        <div className="lg:px-28">
-          <div className="flex w-full flex-col gap-y-3 rounded-lg bg-white px-16 py-3">
-            <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
+        <div className="mb-6 lg:px-28">
+          <div className="flex w-full flex-col rounded-lg bg-white px-16 py-3">
+            <span className="mx-auto mb-3 text-base font-bold text-ipurple lg:text-lg">
               Data
             </span>
             <input
-              className="block w-full cursor-pointer rounded-md border-2 bg-ipurple text-sm text-gray-300 focus:outline-none"
+              className="mb-3 block w-full cursor-pointer rounded-sm border-2 bg-gray-100 text-sm text-gray-600 focus:outline-none"
               type="file"
               onChange={handleFileChange}
             />
             <button
               onClick={() => handleFileUpload()}
               type="button"
-              className="text-yellow mx-auto w-fit rounded-lg bg-igreen px-3 py-1 text-sm font-bold text-white"
+              className="text-yellow mx-auto mb-1 w-fit rounded-lg bg-igreen px-3 py-1 text-sm font-bold text-white"
             >
               Upload
             </button>
+            {isUploadErr ? (
+              <div className="mx-auto text-xs font-medium text-red-500">
+                Please upload your file :)
+              </div>
+            ) : (
+              ""
+            )}
           </div>
         </div>
-        <div className="flex flex-col gap-y-5  lg:gap-x-8">
+        <div className="mb-6 flex flex-col  gap-y-5 lg:gap-x-8">
           {/* <div className="flex flex-col gap-2 rounded-lg bg-white px-7 py-4 lg:px-12 lg:pb-8">
             <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
               Data
@@ -176,7 +197,7 @@ export default function MainPage() {
             />
           </div>
         </div>
-        <div className="w-full px-10 lg:px-32">
+        <div className="mb-6 w-full px-10 lg:px-32">
           <div className="flex flex-col gap-3 rounded-lg bg-white px-7 py-4 lg:px-12">
             <span className="mx-auto text-base font-bold text-ipurple lg:text-lg">
               Signature
@@ -184,12 +205,12 @@ export default function MainPage() {
             <textarea
               rows="1"
               className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-6 py-3 text-sm"
-              // value={signature}
+              value={signature}
               readOnly
               placeholder="Signature will be generated here"
             />
             <button
-              // onClick={() => handleCopy(signature)}
+              onClick={() => handleCopy(signature)}
               className="text-yellow mx-auto w-fit rounded-lg bg-igreen px-3 py-1 text-sm font-bold text-white"
             >
               Copy
@@ -197,15 +218,23 @@ export default function MainPage() {
           </div>
         </div>
         <button
-          className="mx-auto w-fit rounded-lg bg-iyellow px-3 py-2 font-bold text-ipurple"
-          type="submit"
+          onClick={genSign}
+          className="mx-auto mb-3 w-fit rounded-lg bg-iyellow px-3 py-2 font-bold text-ipurple"
+          type="button"
         >
           Generate
         </button>
-      </form>
+        {isGeneratedSign ? (
+          <div className=" mx-auto w-fit rounded-xl border-2 border-iyellow px-3 py-[0.2rem]">
+            <p className=" font-semibold text-white">Signature generated !!</p>
+          </div>
+        ) : (
+          ""
+        )}
+      </div>
 
       {/* Verify  */}
-      <div className="mx-auto flex w-fit flex-col gap-4 rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20 lg:gap-6 lg:px-28">
+      {/* <div className="mx-auto flex w-fit flex-col gap-4 rounded-lg bg-igreen p-8 px-10 shadow-2xl sm:px-20 lg:gap-6 lg:px-28">
         <span className="mx-auto text-xl font-bold text-white lg:text-3xl">
           Verify
         </span>
@@ -253,7 +282,7 @@ export default function MainPage() {
         >
           Generate
         </button>
-      </div>
+      </div> */}
     </div>
   );
 }
