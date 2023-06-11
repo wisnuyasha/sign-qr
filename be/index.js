@@ -81,55 +81,83 @@ app.get('/KeyGen', (req, res) => {
     const signature = sign.sign(privateKey).toString("base64");
   
     const fileName = uploadedFile.originalname;
+    const fileBuffer = uploadedFile.buffer;
+    const fileBase64 = fileBuffer.toString("base64");
   
-    // Store the document name, signature, and file name in Firestore
+    // Store the file metadata (filename, signature, and file content as Base64 string) in Firestore
     db.collection("documents")
-      .add({ fileName, signature })
+      .add({
+        fileName,
+        signature,
+        fileContent: fileBase64,
+      })
       .then((docRef) => {
         res.send({ id: docRef.id, fileName, signature });
       })
       .catch((error) => {
-        res.status(500).send({ error: "Failed to store document" });
+        console.error("Failed to sign document:", error);
+        res.status(500).send({ error: "Failed to sign document" });
       });
   });
   
-  app.post('/verify', (req, res) => {
-    let { data, publicKey, signature } = req.body;
+  app.post("/verify", (req, res) => {
+    let { fileName, publicKey, signature } = req.body;
   
     publicKey = crypto.createPublicKey({
-      key: Buffer.from(publicKey, 'base64'),
-      type: 'spki',
-      format: 'der',
+      key: Buffer.from(publicKey, "base64"),
+      type: "spki",
+      format: "der",
     });
   
-    const verify = crypto.createVerify('SHA256');
-    verify.update(data);
-    verify.end();
-  
-    // Retrieve data and signature from Firestore
-    db.collection('documents')
-      .where('data', '==', data)
+    // Retrieve the document with the matching filename from Firestore
+    db.collection("documents")
+      .where("fileName", "==", fileName)
       .get()
       .then((querySnapshot) => {
         if (querySnapshot.empty) {
-          res.send({ verify: false, error: 'Document not found' });
+          res.send({ verify: false, error: "Document not found" });
         } else {
           querySnapshot.forEach((doc) => {
             const storedSignature = doc.data().signature;
+            const fileContentBase64 = doc.data().fileContent;
+            const fileBuffer = Buffer.from(fileContentBase64, "base64");
   
-            // Verify the signature against the stored signature
-            let result = verify.verify(publicKey, Buffer.from(signature, 'base64'));
+            const verify = crypto.createVerify("SHA256");
+            verify.update(fileBuffer);
+            verify.end();
   
-            res.send({ data, signature, verify: result });
+            try {
+              // Verify the signature against the stored signature
+              const result = verify.verify(publicKey, Buffer.from(signature, "base64"));
+  
+              if (result) {
+                // Verification successful, generate the file download URL
+                const storageRef = storage.ref(`files/${fileName}`);
+                storageRef
+                  .getDownloadURL()
+                  .then((url) => {
+                    res.send({ fileName, signature, verify: true, fileURL: url });
+                  })
+                  .catch((error) => {
+                    console.error("Failed to get file download URL:", error);
+                    res.status(500).send({ error: "Failed to get file download URL" });
+                  });
+              } else {
+                // Verification failed
+                res.send({ fileName, signature, verify: false });
+              }
+            } catch (error) {
+              console.error("Error during verification:", error);
+              res.status(500).send({ error: "Error during verification" });
+            }
           });
         }
       })
       .catch((error) => {
-        res.send({ verify: false, error: 'Failed to verify document' });
+        console.error("Failed to verify document:", error);
+        res.status(500).send({ error: "Failed to verify document" });
       });
   });
- 
-
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
