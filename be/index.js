@@ -41,10 +41,16 @@ app.get('/KeyGen', (req, res) => {
       });
   });
   
+  let uploadedFile; // Variable to store the uploaded file information
+
   app.post("/upload", upload.single("file"), (req, res) => {
-    const storageRef = storage.ref(`files/${req.file.originalname}`);
+    // Store the uploaded file information
+    uploadedFile = req.file;
   
-    storageRef.put(req.file.buffer)
+    const storageRef = storage.ref(`files/${uploadedFile.originalname}`);
+  
+    storageRef
+      .put(uploadedFile.buffer)
       .then((snapshot) => {
         console.log("File uploaded successfully");
         res.json({ message: "File uploaded successfully" });
@@ -55,33 +61,38 @@ app.get('/KeyGen', (req, res) => {
       });
   });
   
-
-  app.post('/sign', (req, res) => {
-    let data = req.body.data;
+  app.post("/sign", (req, res) => {
     let privateKey = req.body.privateKey;
   
     privateKey = crypto.createPrivateKey({
-      key: Buffer.from(privateKey, 'base64'),
-      type: 'pkcs8',
-      format: 'der',
+      key: Buffer.from(privateKey, "base64"),
+      type: "pkcs8",
+      format: "der",
     });
   
-    const sign = crypto.createSign('SHA256');
-    sign.update(data);
-    sign.end();
-    const signature = sign.sign(privateKey).toString('base64');
+    if (!uploadedFile) {
+      res.status(400).send({ error: "No file uploaded" });
+      return;
+    }
   
-    // Store data and signature in Firestore
-    db.collection('documents')
-      .add({ data, signature })
+    const sign = crypto.createSign("SHA256");
+    sign.update(uploadedFile.buffer);
+    sign.end();
+    const signature = sign.sign(privateKey).toString("base64");
+  
+    const fileName = uploadedFile.originalname;
+  
+    // Store the document name, signature, and file name in Firestore
+    db.collection("documents")
+      .add({ fileName, signature })
       .then((docRef) => {
-        res.send({ id: docRef.id, data, signature });
+        res.send({ id: docRef.id, fileName, signature });
       })
       .catch((error) => {
-        res.status(500).send({ error: 'Failed to store document' });
+        res.status(500).send({ error: "Failed to store document" });
       });
   });
-
+  
   app.post('/verify', (req, res) => {
     let { data, publicKey, signature } = req.body;
   
