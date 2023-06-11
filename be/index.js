@@ -159,6 +159,27 @@ app.get('/KeyGen', (req, res) => {
       });
   });
 
+  app.get('/documents/:id', (req, res) => {
+    const documentId = req.params.id;
+  
+    // Retrieve the document from Firestore based on the ID
+    db.collection('documents')
+      .doc(documentId)
+      .get()
+      .then((doc) => {
+        if (!doc.exists) {
+          res.status(404).send({ error: 'Document not found' });
+        } else {
+          // Extract all attributes from the document data
+          const attributes = doc.data();
+          res.send(attributes);
+        }
+      })
+      .catch((error) => {
+        res.status(500).send({ error: 'Failed to fetch document' });
+      });
+  });  
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
