@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import QRCode from "react-qr-code";
+// import QRCode from "react-qr-code";
+import QRCode from "qrcode";
 
 export default function GenerateSignature() {
   const [inputFile, setInputFile] = useState(null);
@@ -9,7 +10,7 @@ export default function GenerateSignature() {
   const [inputPrivateKey, setInputPrivateKey] = useState("");
   const [signature, setSignature] = useState("");
   const [signatureId, setSignatureId] = useState("");
-  const [qrValue, setQrValue] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [isGeneratedSign, setIsGeneratedSign] = useState(false);
 
   async function genSign() {
@@ -35,8 +36,19 @@ export default function GenerateSignature() {
   }
 
   useEffect(() => {
+    const generateQRCode = async (url) => {
+      try {
+        const resp = await QRCode.toDataURL(url);
+        return resp;
+      } catch (err) {
+        console.log(err);
+        return null;
+      }
+    };
     if (signatureId) {
-      setQrValue(`http://localhost:3000/verify/${signatureId}`);
+      const qrUrl = `http://localhost:3000/verify/${signatureId}`;
+      console.log(qrUrl);
+      generateQRCode(qrUrl).then((imageUrl) => setImageUrl(imageUrl));
     }
   }, [signatureId]);
 
@@ -47,12 +59,14 @@ export default function GenerateSignature() {
   async function handleFileUpload() {
     const formData = new FormData();
     formData.append("file", inputFile);
-    await axios.post("http://localhost:5000/upload", formData).then((res) => {
-      console.log(res.data.message);
-      setIsUploadErr(false);
-      setIsUpload(true);
-      // .catch((err) => console.log(err));
-    });
+    await axios
+      .post("http://localhost:5000/upload", formData)
+      .then((res) => {
+        console.log(res.data.message);
+        setIsUploadErr(false);
+        setIsUpload(true);
+      })
+      .catch((err) => console.log(err));
   }
 
   function handleCopy(text) {
@@ -129,12 +143,10 @@ export default function GenerateSignature() {
             placeholder="Signature will be generated here"
           />
           {isGeneratedSign ? (
-            <div className="mx-auto mb-2 h-full">
-              <QRCode size={125} value={qrValue} />
-            </div>
-          ) : (
-            ""
-          )}
+            <a href={imageUrl} download className="mx-auto mb-2 h-full">
+              <img src={imageUrl} alt="QRCODE" />
+            </a>
+          ) : null}
           <button
             onClick={() => handleCopy(signature)}
             className="text-yellow mx-auto w-fit rounded-lg bg-igreen px-3 py-1 text-sm font-bold text-white"
