@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 
 export default function VerifyPage() {
   const [docsFilename, setDocsFilename] = useState([]);
-  const [inputSignature, setInputSignature] = useState(null);
+  const [signature, setSignature] = useState(null);
   const [inputPublicKey, setInputPublicKey] = useState(null);
   const [inputErr, setInputErr] = useState(false);
   const [verifErr, setVerifErr] = useState(false);
@@ -12,14 +12,14 @@ export default function VerifyPage() {
   const { id } = useParams();
 
   async function handleSubmit() {
-    if (!inputPublicKey || !inputSignature) {
+    if (!inputPublicKey) {
       setInputErr(true);
       return;
     } else {
       const newObjectDocs = {
         fileName: docsFilename,
         publicKey: inputPublicKey,
-        signature: inputSignature,
+        signature: signature,
       };
       await axios
         .post(`http://localhost:5000/verify`, newObjectDocs)
@@ -29,10 +29,13 @@ export default function VerifyPage() {
           if (data.verify === true) {
             window.open(data.fileURL);
             setVerifSuccess(true);
+            setVerifErr(false)
           } else setVerifErr(true);
         })
         .catch((err) => {
           console.log(err);
+          setVerifErr(true);
+          setVerifSuccess(false);
         });
     }
   }
@@ -43,7 +46,9 @@ export default function VerifyPage() {
         .get(`http://localhost:5000/documents/${id}`)
         .then((res) => {
           const filename = res.data.fileName;
+          const signature = res.data.signature;
           setDocsFilename(filename);
+          setSignature(signature);
         })
         .catch((err) => console.log(err));
     }
@@ -64,7 +69,8 @@ export default function VerifyPage() {
             <textarea
               rows="6"
               className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-6 py-3 text-sm"
-              onChange={(event) => setInputSignature(event.target.value)}
+              readOnly
+              value={signature}
               placeholder="Input your signature"
             ></textarea>
             {inputErr ? (
